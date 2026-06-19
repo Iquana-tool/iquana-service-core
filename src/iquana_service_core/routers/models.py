@@ -19,6 +19,20 @@ from iquana_toolbox.mlflow import MLFlowModelRegistry
 logger = getLogger(__name__)
 
 
+def _model_infos_via_tags(registry: MLFlowModelRegistry, tags: dict):
+    """Look up models by tags across toolbox versions.
+
+    MIGRATION BRIDGE: the toolbox renamed ``get_models_via_tags`` ->
+    ``get_model_infos_via_tags``. Services are mid-migration and pin different
+    toolbox revisions. Once every repo pins the canonical (renamed) toolbox,
+    delete this helper and call ``registry.get_model_infos_via_tags`` directly.
+    """
+    getter = getattr(registry, "get_model_infos_via_tags", None) or getattr(
+        registry, "get_models_via_tags"
+    )
+    return getter(tags=tags)
+
+
 def build_model_routers(registry: MLFlowModelRegistry, task: str) -> Tuple[APIRouter, APIRouter]:
     """Build the (public, session) model routers for a service.
 
@@ -36,7 +50,7 @@ def build_model_routers(registry: MLFlowModelRegistry, task: str) -> Tuple[APIRo
     @router.get("/models/all", tags=["models"])
     async def list_models():
         """List all models registered for this service's task."""
-        models = registry.get_model_infos_via_tags(tags={"task": task})
+        models = _model_infos_via_tags(registry, {"task": task})
         return {
             "success": True,
             "message": f"Retrieved {len(models)} models.",
@@ -46,7 +60,7 @@ def build_model_routers(registry: MLFlowModelRegistry, task: str) -> Tuple[APIRo
     @router.get("/models/all/available", tags=["models"])
     async def list_available_models():
         """List task models that are ready to serve."""
-        models = registry.get_model_infos_via_tags(tags={"task": task, "status": "ready"})
+        models = _model_infos_via_tags(registry, {"task": task, "status": "ready"})
         return {
             "success": True,
             "message": f"Retrieved {len(models)} available models.",

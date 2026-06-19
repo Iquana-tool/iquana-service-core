@@ -5,13 +5,12 @@ A service becomes, in full:
     from iquana_service_core import create_service_app
     from app.state import MODEL_REGISTRY
     from app.routes.inference import router, session_router
-    from models.register_models import register_models
 
     app = create_service_app(
         title="Instance Discovery API",
         task="instance-discovery",
         registry=MODEL_REGISTRY,
-        register_models=register_models,
+        models_package="models",   # auto-discovers @register_model classes
         inference_routers=[router, session_router],
         hf_login=True,
     )
@@ -39,8 +38,9 @@ def create_service_app(
     title: str,
     task: str,
     registry: MLFlowModelRegistry,
-    register_models: RegisterModels,
     inference_routers: Sequence[APIRouter],
+    models_package: Optional[str] = None,
+    register_models: Optional[RegisterModels] = None,
     description: str = "",
     version: str = "0.1.0",
     hf_login: bool = False,
@@ -50,13 +50,22 @@ def create_service_app(
 ) -> FastAPI:
     """Build a fully-wired FastAPI app for an AI service.
 
+    Model registration takes one of two forms (at least one is required):
+
+    * ``models_package`` -- auto-discover every class decorated with
+      :func:`iquana_service_core.registry.register_model` in that package
+      (e.g. ``"models"``). Preferred: adding a model is just dropping a file.
+    * ``register_models`` -- a callable the service supplies to register its
+      models itself. Kept for services not yet using the decorator.
+
     Args:
         title: OpenAPI title.
         task: The service's ``task`` tag, used to filter the model registry.
         registry: Shared MLflow-backed model registry.
-        register_models: Callable invoked at startup to register models.
         inference_routers: Service-specific routers (the only thing a service
             must still author itself).
+        models_package: Dotted package to auto-discover models from.
+        register_models: Callable invoked at startup to register models.
         description: OpenAPI description.
         version: OpenAPI version.
         hf_login: Log into HuggingFace on startup (for gated weights).
@@ -65,6 +74,12 @@ def create_service_app(
             separated) or ``http://localhost:8000``.
         root_path: ASGI root path when served behind a proxy prefix.
     """
+    if models_package is None and register_models is None:
+        raise ValueError(
+            "create_service_app requires either 'models_package' (auto-discovery) "
+            "or a 'register_models' callable."
+        )
+
     if allowed_origins is None:
         allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:8000").split(",")
     allowed_origins = [o.strip() for o in allowed_origins if o.strip()]
@@ -74,7 +89,12 @@ def create_service_app(
         description=description,
         version=version,
         root_path=root_path,
-        lifespan=build_lifespan(registry, register_models, hf_login=hf_login),
+        lifespan=build_lifespan(
+            registry,
+            register_models,
+            models_package=models_package,
+            hf_login=hf_login,
+        ),
     )
 
     app.add_middleware(

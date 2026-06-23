@@ -7,8 +7,8 @@ A service becomes, in full:
     from app.routes.inference import router, session_router
 
     app = create_service_app(
-        title="Instance Discovery API",
-        task="instance-discovery",
+        title="Instance Suggestion API",
+        task="instance-suggestion",
         registry=MODEL_REGISTRY,
         models_package="models",   # auto-discovers @register_model classes
         inference_routers=[router, session_router],

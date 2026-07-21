@@ -39,7 +39,7 @@ def build_model_routers(registry: MLFlowModelRegistry, task: str) -> Tuple[APIRo
     Args:
         registry: The shared MLflow-backed model registry.
         task: The ``task`` tag identifying this service's models
-            (e.g. ``"instance-discovery"``, ``"prompted-segmentation"``).
+            (e.g. ``"instance-suggestion"``, ``"prompted-segmentation"``).
 
     Returns:
         ``(router, session_router)`` — mount both on the app.

@@ -18,8 +18,8 @@ from app.routes.inference import router, session_router
 from models.register_models import register_models
 
 app = create_service_app(
-    title="Instance Discovery API",
-    task="instance-discovery",          # the registry `task` tag for this service
+    title="Instance Suggestion API",
+    task="instance-suggestion",          # the registry `task` tag for this service
     registry=MODEL_REGISTRY,
     register_models=register_models,
     inference_routers=[router, session_router],
@@ -27,7 +27,7 @@ app = create_service_app(
 )
 ```
 
-See [`examples/instance_discovery_app.py`](examples/instance_discovery_app.py)
+See [`examples/instance_suggestion_app.py`](examples/instance_suggestion_app.py)
 for a full before/after of `instance-discovery-service`.
 
 ## What it provides

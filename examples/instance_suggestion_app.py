@@ -37,9 +37,9 @@ def _device_info() -> dict:
 
 def create_app():
     return create_service_app(
-        title="IQUANA Instance Discovery API",
-        description="FastAPI backend for instance discovery / few-shot segmentation",
-        task="instance-discovery",
+        title="IQUANA Instance Suggestion API",
+        description="FastAPI backend for instance suggestion / few-shot segmentation",
+        task="instance-suggestion",
         registry=MODEL_REGISTRY,
         register_models=register_models,
         inference_routers=[inference_router, inference_session_router],

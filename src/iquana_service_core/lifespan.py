@@ -66,20 +66,41 @@ def build_lifespan(
 def _register_into_mlflow(registry: MLFlowModelRegistry, model_classes: list) -> None:
     """Register collected model classes into the MLflow registry.
 
-    MIGRATION BRIDGE: the toolbox registry method was renamed
-    ``ensure_models_are_registered`` -> ``register_models`` and services pin
-    different toolbox revisions, so resolve whichever exists. Phase 2 moves the
-    registry into service-core and deletes this shim.
+    Registration is per-model and fault-isolated: if one model fails to
+    instantiate or register (e.g. a gated weight download with no token, or a
+    dependency that won't import), it is logged and skipped rather than taking
+    the whole service down. A model that can't load simply doesn't appear in the
+    registry; every other model still serves. This matters most for the unified
+    service, where a single bad model would otherwise crash every task surface.
+
+    MIGRATION BRIDGE: the toolbox renamed ``ensure_models_are_registered`` ->
+    ``register_models``. We prefer the per-model ``register_model`` for isolation
+    and fall back to the bulk API on older toolboxes (which has no isolation).
     """
-    register = getattr(registry, "register_models", None) or getattr(
+    register_one = getattr(registry, "register_model", None)
+    if register_one is not None:
+        registered = 0
+        for cls in model_classes:
+            name = getattr(cls, "__name__", repr(cls))
+            try:
+                # ``cls`` may be a model class or a zero-arg factory function;
+                # calling it yields the instance to register.
+                register_one(cls())
+                registered += 1
+            except Exception:
+                logger.exception("Failed to register model '%s'; skipping it.", name)
+        logger.info("Registered %d of %d model(s).", registered, len(model_classes))
+        return
+
+    register_bulk = getattr(registry, "register_models", None) or getattr(
         registry, "ensure_models_are_registered", None
     )
-    if register is None:
+    if register_bulk is None:
         raise AttributeError(
-            "Registry exposes neither 'register_models' nor "
+            "Registry exposes neither 'register_model', 'register_models' nor "
             "'ensure_models_are_registered'."
         )
-    register(model_classes)
+    register_bulk(model_classes)
 
 
 def _hf_login() -> None:

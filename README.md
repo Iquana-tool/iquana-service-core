@@ -1,4 +1,27 @@
-# iquana-service-core
+# iquana-service-core — DEPRECATED
+
+> **This repository is retired. Do not add it to a new checkout.**
+>
+> It existed to remove boilerplate shared by the per-task AI services
+> (`prompted-seg-service`, `instance-discovery-service`,
+> `instance-segmentation-service`). Those services have been merged into the
+> single [`ai-service`](https://github.com/Iquana-tool/ai-service), leaving this
+> package with exactly one consumer — so it has been folded into it:
+>
+> | was | now |
+> |---|---|
+> | `iquana_service_core.registry` / `.discovery` | `ai-service` → `models/registry.py` |
+> | `iquana_service_core.lifespan` | `ai-service` → `app/lifespan.py` |
+> | `iquana_service_core.routers.health` | `ai-service` → `app/routes/health.py` |
+> | `iquana_service_core.app.create_service_app` | dropped (single-task app factory, no callers) |
+> | `iquana_service_core.routers.models` | dropped (superseded by `ai-service` → `app/routes/models.py`) |
+>
+> `iquana-toolbox` is **not** affected and remains shared — it is used by both
+> the backend and the ai-service.
+>
+> The content below describes the pre-merge world and is kept for history only.
+
+---
 
 Shared FastAPI runtime for the IQUANA AI segmentation services
 (`prompted-seg-service`, `instance-discovery-service`, future services).
